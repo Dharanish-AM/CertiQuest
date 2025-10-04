@@ -248,7 +248,7 @@ export default function AdminDashboard() {
                   <div>
                     <p className="font-medium">{cert.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {cert.provider} • {cert.domain} • ${cert.cost}
+                      {cert.provider} • {cert.domain} • ₹{cert.cost}
                     </p>
                   </div>
                   <div className="flex gap-2">

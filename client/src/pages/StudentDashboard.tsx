@@ -261,7 +261,7 @@ export default function StudentDashboard() {
             <div className="text-sm text-muted-foreground">No recommendations yet. Update your profile to get personalized suggestions.</div>
           ) : (
             recommendedCerts.map((cert) => (
-              <div key={cert.id} className="min-w-[300px] max-w-[320px] flex-shrink-0" style={{ scrollSnapAlign: "start" }}>
+              <div key={cert.id} className="min-w-[300px] h-full max-w-[450px] flex-shrink-0" style={{ scrollSnapAlign: "start" }}>
                 <CertificationCard
                   certification={cert}
                   onBookmark={handleBookmark}
@@ -269,6 +269,7 @@ export default function StudentDashboard() {
                     const found = mockCertifications.find((c) => c.id === id);
                     if (found) setSelectedCert(found);
                   }}
+                  aiSuggested={true}
                 />
               </div>
             ))
@@ -298,6 +299,7 @@ export default function StudentDashboard() {
                 const cert = mockCertifications.find((c) => c.id === id);
                 if (cert) setSelectedCert(cert);
               }}
+              aiSuggested={false}
             />
           ))}
         </div>

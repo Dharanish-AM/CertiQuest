@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign, Calendar, CheckCircle2, Star, Bookmark, ExternalLink } from "lucide-react";
+import {  Calendar, CheckCircle2, Star, Bookmark, ExternalLink, IndianRupee } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useState } from "react";
 import { loadReviews, saveReviews, computeAggregate } from "@/lib/reviews";
@@ -80,7 +80,7 @@ export function CertificationDetail({
           {/* Key Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
+              <IndianRupee className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-sm text-muted-foreground">Cost</p>
                 <p className="font-semibold">${certification.cost === 0 ? 'Free' : certification.cost}</p>
