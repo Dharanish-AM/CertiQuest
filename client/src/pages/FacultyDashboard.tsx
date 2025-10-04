@@ -39,7 +39,7 @@ export default function FacultyDashboard() {
       <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold gradient-hero bg-clip-text text-transparent">CertiQuest - Faculty</h1>
+            <h1 className="text-2xl font-bold">CertiQuest - Faculty</h1>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={() => navigate("/profile")}>
                 <User className="w-5 h-5" />

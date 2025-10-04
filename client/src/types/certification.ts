@@ -11,7 +11,17 @@ export interface Certification {
   bookmarked?: boolean;
   rating?: number;
   reviews?: number;
+  reviewList?: Review[];
   imageUrl?: string;
 }
 
 export type UserRole = 'student' | 'faculty' | 'admin';
+
+export interface Review {
+  id: string;
+  userName: string;
+  userId?: string;
+  rating: number; // 1-5
+  text: string;
+  createdAt: string; // ISO
+}

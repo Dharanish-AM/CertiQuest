@@ -8,11 +8,28 @@ export const mockCertifications: Certification[] = [
     domain: "Cloud Computing",
     cost: 150,
     deadline: "2025-11-15",
-    description: "Learn to design and deploy scalable systems on AWS. Master core AWS services including EC2, S3, RDS, and VPC.",
+    description:
+      "Learn to design and deploy scalable systems on AWS. Master core AWS services including EC2, S3, RDS, and VPC.",
     credibility: "verified",
     facultyVerified: true,
     rating: 4.8,
     reviews: 1247,
+    reviewList: [
+      {
+        id: "r1",
+        userName: "Alice",
+        rating: 5,
+        text: "Great coverage and real-world labs!",
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: "r2",
+        userName: "Bob",
+        rating: 4,
+        text: "Challenging but rewarding.",
+        createdAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     id: "2",
@@ -21,11 +38,21 @@ export const mockCertifications: Certification[] = [
     domain: "Machine Learning",
     cost: 200,
     deadline: "2025-12-01",
-    description: "Design, build, and deploy machine learning models using Google Cloud Platform. Covers TensorFlow, AutoML, and MLOps.",
+    description:
+      "Design, build, and deploy machine learning models using Google Cloud Platform. Covers TensorFlow, AutoML, and MLOps.",
     credibility: "verified",
     facultyVerified: true,
     rating: 4.7,
     reviews: 892,
+    reviewList: [
+      {
+        id: "r3",
+        userName: "Caitlin",
+        rating: 5,
+        text: "Excellent ML curriculum.",
+        createdAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     id: "3",
@@ -34,11 +61,21 @@ export const mockCertifications: Certification[] = [
     domain: "Cybersecurity",
     cost: 950,
     deadline: "2025-10-20",
-    description: "Learn ethical hacking techniques and tools. Master penetration testing, vulnerability assessment, and security protocols.",
+    description:
+      "Learn ethical hacking techniques and tools. Master penetration testing, vulnerability assessment, and security protocols.",
     credibility: "trusted",
     facultyVerified: true,
     rating: 4.6,
     reviews: 2341,
+    reviewList: [
+      {
+        id: "r4",
+        userName: "Dan",
+        rating: 5,
+        text: "Very hands-on training.",
+        createdAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     id: "4",
@@ -47,11 +84,13 @@ export const mockCertifications: Certification[] = [
     domain: "Data Science",
     cost: 165,
     deadline: "2025-11-30",
-    description: "Implement machine learning solutions on Azure. Learn to use Azure ML, Python, and R for data science projects.",
+    description:
+      "Implement machine learning solutions on Azure. Learn to use Azure ML, Python, and R for data science projects.",
     credibility: "verified",
     facultyVerified: false,
     rating: 4.5,
     reviews: 634,
+    reviewList: [],
   },
   {
     id: "5",
@@ -60,11 +99,13 @@ export const mockCertifications: Certification[] = [
     domain: "Cybersecurity",
     cost: 370,
     deadline: "2025-10-30",
-    description: "Foundational cybersecurity certification covering network security, threat management, and cryptography.",
+    description:
+      "Foundational cybersecurity certification covering network security, threat management, and cryptography.",
     credibility: "trusted",
     facultyVerified: true,
     rating: 4.7,
     reviews: 3120,
+    reviewList: [],
   },
   {
     id: "6",
@@ -73,11 +114,13 @@ export const mockCertifications: Certification[] = [
     domain: "Cloud Computing",
     cost: 395,
     deadline: "2025-11-10",
-    description: "Master Kubernetes administration. Learn container orchestration, deployment strategies, and cluster management.",
+    description:
+      "Master Kubernetes administration. Learn container orchestration, deployment strategies, and cluster management.",
     credibility: "verified",
     facultyVerified: true,
     rating: 4.8,
     reviews: 756,
+    reviewList: [],
   },
   {
     id: "7",
@@ -86,11 +129,13 @@ export const mockCertifications: Certification[] = [
     domain: "Machine Learning",
     cost: 100,
     deadline: "2025-12-15",
-    description: "Demonstrate your proficiency in TensorFlow. Build and train neural networks for computer vision and NLP.",
+    description:
+      "Demonstrate your proficiency in TensorFlow. Build and train neural networks for computer vision and NLP.",
     credibility: "new",
     facultyVerified: false,
     rating: 4.4,
     reviews: 421,
+    reviewList: [],
   },
   {
     id: "8",
@@ -99,10 +144,12 @@ export const mockCertifications: Certification[] = [
     domain: "Networking",
     cost: 300,
     deadline: "2025-10-25",
-    description: "Learn networking fundamentals. Master IP addressing, routing protocols, and network troubleshooting.",
+    description:
+      "Learn networking fundamentals. Master IP addressing, routing protocols, and network troubleshooting.",
     credibility: "trusted",
     facultyVerified: true,
     rating: 4.6,
     reviews: 1890,
+    reviewList: [],
   },
 ];

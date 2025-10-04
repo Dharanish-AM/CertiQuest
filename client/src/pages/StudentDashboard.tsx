@@ -1,13 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CertificationCard } from "@/components/CertificationCard";
 import { CertificationDetail } from "@/components/CertificationDetail";
 import { mockCertifications } from "@/data/mockCertifications";
 import { Certification } from "@/types/certification";
-import { Search, Filter, LogOut, Bookmark, Bell, User } from "lucide-react";
+import { Search, Filter, LogOut, Bookmark, Bell, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { getDefaultProfile, loadProfile } from "@/lib/profile";
+import { UserProfile } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
 
 export default function StudentDashboard() {
@@ -17,6 +25,8 @@ export default function StudentDashboard() {
   const [sortBy, setSortBy] = useState("deadline");
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const [recommendedCerts, setRecommendedCerts] = useState<Certification[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarks");
@@ -32,20 +42,29 @@ export default function StudentDashboard() {
 
   const handleBookmark = (id: string) => {
     const newBookmarks = bookmarkedIds.includes(id)
-      ? bookmarkedIds.filter(bid => bid !== id)
+      ? bookmarkedIds.filter((bid) => bid !== id)
       : [...bookmarkedIds, id];
-    
+
     setBookmarkedIds(newBookmarks);
     localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
   };
 
-  const domains = ["all", "Cloud Computing", "Machine Learning", "Cybersecurity", "Data Science", "Networking"];
+  const domains = [
+    "all",
+    "Cloud Computing",
+    "Machine Learning",
+    "Cybersecurity",
+    "Data Science",
+    "Networking",
+  ];
 
   const filteredCerts = mockCertifications
-    .filter(cert => {
-      const matchesSearch = cert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           cert.provider.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDomain = domainFilter === "all" || cert.domain === domainFilter;
+    .filter((cert) => {
+      const matchesSearch =
+        cert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cert.provider.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDomain =
+        domainFilter === "all" || cert.domain === domainFilter;
       return matchesSearch && matchesDomain;
     })
     .sort((a, b) => {
@@ -58,7 +77,43 @@ export default function StudentDashboard() {
       }
       return 0;
     })
-    .map(cert => ({ ...cert, bookmarked: bookmarkedIds.includes(cert.id) }));
+    .map((cert) => ({ ...cert, bookmarked: bookmarkedIds.includes(cert.id) }));
+
+  // Compute simple recommendations based on profile degree + interests
+  useEffect(() => {
+  const profile: UserProfile = (loadProfile() ?? getDefaultProfile("student")) as UserProfile;
+  const interests: string[] = profile.interests || [];
+  const degree: string = (profile.degree || "").toLowerCase();
+
+    const scored = mockCertifications
+      .map((cert) => {
+        let score = 0;
+        // boost if domain matches an interest
+        if (interests.includes(cert.domain)) score += 2;
+        // boost if title or provider mentions degree or degree tokens
+        if (degree && (cert.title.toLowerCase().includes(degree) || cert.provider.toLowerCase().includes(degree))) score += 2;
+        // slight boost if domain contains degree token
+        if (degree && cert.domain.toLowerCase().includes(degree)) score += 1;
+        return { cert, score };
+      })
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        // fallback to rating
+        const ra = a.cert.rating || 0;
+        const rb = b.cert.rating || 0;
+        return rb - ra;
+      })
+      .map(({ cert }) => ({ ...cert, bookmarked: bookmarkedIds.includes(cert.id) }));
+
+    setRecommendedCerts(scored.slice(0, 8));
+  }, [bookmarkedIds]);
+
+  const scrollCarousel = (dir: "left" | "right") => {
+    if (!carouselRef.current) return;
+    const el = carouselRef.current;
+    const amount = el.clientWidth * 0.8;
+    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,17 +122,17 @@ export default function StudentDashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-bold gradient-hero bg-clip-text text-transparent">CertiQuest</h1>
+              <h1 className="text-2xl font-bold bg-clip-text">CertiQuest</h1>
               <nav className="hidden md:flex gap-6">
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="text-sm font-medium text-foreground hover:text-primary transition-base"
                   onClick={(e) => e.preventDefault()}
                 >
                   Directory
                 </a>
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="text-sm font-medium text-muted-foreground hover:text-primary transition-base"
                   onClick={(e) => {
                     e.preventDefault();
@@ -86,8 +141,8 @@ export default function StudentDashboard() {
                 >
                   My Bookmarks
                 </a>
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="text-sm font-medium text-muted-foreground hover:text-primary transition-base"
                   onClick={(e) => e.preventDefault()}
                 >
@@ -99,9 +154,9 @@ export default function StudentDashboard() {
               <Button variant="ghost" size="icon">
                 <Bell className="w-5 h-5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="relative"
                 onClick={() => navigate("/bookmarks")}
               >
@@ -112,7 +167,11 @@ export default function StudentDashboard() {
                   </span>
                 )}
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => navigate("/profile")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/profile")}
+              >
                 <User className="w-5 h-5" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -128,8 +187,12 @@ export default function StudentDashboard() {
       <section className="gradient-hero py-12">
         <div className="container mx-auto px-4">
           <div className="text-center text-white mb-8">
-            <h2 className="text-4xl font-bold mb-3">Welcome back, Student 👋</h2>
-            <p className="text-lg opacity-90">Discover verified certifications to boost your career</p>
+            <h2 className="text-4xl font-bold mb-3">
+              Welcome back, Student 👋
+            </h2>
+            <p className="text-lg opacity-90">
+              Discover verified certifications to boost your career
+            </p>
           </div>
 
           {/* Search Bar */}
@@ -150,7 +213,7 @@ export default function StudentDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {domains.map(domain => (
+                  {domains.map((domain) => (
                     <SelectItem key={domain} value={domain}>
                       {domain === "all" ? "All Domains" : domain}
                     </SelectItem>
@@ -172,16 +235,56 @@ export default function StudentDashboard() {
         </div>
       </section>
 
+      {/* Recommended Section */}
+      <section className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-2xl font-semibold">Recommended for You</h3>
+            <p className="text-sm text-muted-foreground">Based on your degree + interests</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => scrollCarousel("left")}>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => scrollCarousel("right")}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        <div
+          ref={carouselRef}
+          className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar"
+          style={{ scrollSnapType: "x mandatory" }}
+        >
+          {recommendedCerts.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No recommendations yet. Update your profile to get personalized suggestions.</div>
+          ) : (
+            recommendedCerts.map((cert) => (
+              <div key={cert.id} className="min-w-[300px] max-w-[320px] flex-shrink-0" style={{ scrollSnapAlign: "start" }}>
+                <CertificationCard
+                  certification={cert}
+                  onBookmark={handleBookmark}
+                  onClick={(id) => {
+                    const found = mockCertifications.find((c) => c.id === id);
+                    if (found) setSelectedCert(found);
+                  }}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
       {/* Certifications Grid */}
       <section className="container mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-semibold">
-            {filteredCerts.length} Certification{filteredCerts.length !== 1 ? 's' : ''} Found
+            {filteredCerts.length} Certification
+            {filteredCerts.length !== 1 ? "s" : ""} Found
           </h3>
           <div className="flex gap-2">
-            <Badge variant="outline">
-              {bookmarkedIds.length} Bookmarked
-            </Badge>
+            <Badge variant="outline">{bookmarkedIds.length} Bookmarked</Badge>
           </div>
         </div>
 
@@ -192,7 +295,7 @@ export default function StudentDashboard() {
               certification={cert}
               onBookmark={handleBookmark}
               onClick={(id) => {
-                const cert = mockCertifications.find(c => c.id === id);
+                const cert = mockCertifications.find((c) => c.id === id);
                 if (cert) setSelectedCert(cert);
               }}
             />
@@ -205,7 +308,9 @@ export default function StudentDashboard() {
         isOpen={!!selectedCert}
         onClose={() => setSelectedCert(null)}
         onBookmark={handleBookmark}
-        isBookmarked={selectedCert ? bookmarkedIds.includes(selectedCert.id) : false}
+        isBookmarked={
+          selectedCert ? bookmarkedIds.includes(selectedCert.id) : false
+        }
       />
     </div>
   );
