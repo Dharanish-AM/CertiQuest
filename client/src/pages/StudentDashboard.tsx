@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {DOMAINS} from "@/constants/constant"
 import {
   Select,
   SelectContent,
@@ -66,15 +67,6 @@ export default function StudentDashboard() {
     setBookmarkedIds(newBookmarks);
     localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
   };
-
-  const domains = [
-    "all",
-    "Cloud Computing",
-    "Machine Learning",
-    "Cybersecurity",
-    "Data Science",
-    "Networking",
-  ];
 
   const filteredCerts = certifications
     .filter((cert) => {
@@ -243,7 +235,7 @@ export default function StudentDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {domains.map((domain) => (
+                  {DOMAINS.map((domain) => (
                     <SelectItem key={domain} value={domain}>
                       {domain === "all" ? "All Domains" : domain}
                     </SelectItem>

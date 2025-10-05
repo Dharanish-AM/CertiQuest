@@ -1,4 +1,5 @@
 export const DOMAINS = [
+  "all",
   "General",
   "Cloud Computing",
   "Cybersecurity",

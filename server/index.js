@@ -243,6 +243,33 @@ app.post("/api/certifications/verify", async (req, res) => {
   }
 });
 
+app.get("/api/users/:token", async (req, res) => {
+  try {
+    const token = req.params.token;
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+    console.error("Error fetching user by token:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 app.get("/api/users", async (req, res) => {
   try {
     const users = await User.find().select("-password");
