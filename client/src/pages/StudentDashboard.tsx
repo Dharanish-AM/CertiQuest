@@ -46,7 +46,11 @@ export default function StudentDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchCertifications();
+    const loadData = async () => {
+      const data = await fetchCertifications();
+      setCertifications(data.certifications || data);
+    };
+    loadData();
   }, []);
 
   const handleLogout = () => {

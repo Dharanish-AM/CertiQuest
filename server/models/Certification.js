@@ -15,9 +15,10 @@ const certificationSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     provider: { type: String, required: true },
+    link: { type: String, required: true },
     domain: { type: String, enum: DOMAINS, required: true },
     cost: { type: Number, required: true },
-    deadline: { type: String, required: true },
+    deadline: { type: Date, required: true },
     description: { type: String, required: true },
     credibility: {
       type: String,

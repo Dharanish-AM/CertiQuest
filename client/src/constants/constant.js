@@ -1,10 +1,10 @@
-const DOMAINS = [
+export const DOMAINS = [
   "General",
   "Cloud Computing",
   "Cybersecurity",
   "Data Science",
   "DevOps",
-  "Machine Learning",
+ "Machine Learning",
   "Project Management",
   "Software Development",
   "Networking",
@@ -12,5 +12,3 @@ const DOMAINS = [
   "Web Development",
   "Mobile Development",
 ];
-
-module.exports = { DOMAINS };

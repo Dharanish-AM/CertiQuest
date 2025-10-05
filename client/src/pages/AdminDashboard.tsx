@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DOMAINS } from "@/constants/constant";
 import {
   LogOut,
   Users,
@@ -23,21 +24,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { loadUsers, addUser, removeUser } from "@/lib/users";
-import { addCert, loadCerts, removeCert } from "@/lib/certs";
+import {
+  fetchCertifications,
+  addCertification,
+} from "@/service/certificationService";
+import { removeCert } from "@/lib/certs";
 import { UserProfile } from "@/types/user";
 import { Certification } from "@/types/certification";
-
-const DOMAINS = [
-  "General",
-  "Technology",
-  "Business",
-  "Health",
-  "Education",
-  "Finance",
-  "Art",
-  "Science",
-  "Engineering",
-];
+import { fetchUsers } from "@/service/userService";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -50,25 +44,49 @@ export default function AdminDashboard() {
 
   // Dialog states
   const [openAddCert, setOpenAddCert] = useState(false);
+  const [openEditCert, setOpenEditCert] = useState(false);
   const [openManageUsers, setOpenManageUsers] = useState(false);
 
-  // Certification form state
-  const [editingCertId, setEditingCertId] = useState<string | null>(null);
-  const [certTitle, setCertTitle] = useState("");
-  const [certProvider, setCertProvider] = useState("");
-  const [certDomain, setCertDomain] = useState("General");
-  const [certCost, setCertCost] = useState<number>(0);
-  const [certDescription, setCertDescription] = useState("");
-  const [certDeadline, setCertDeadline] = useState("");
-  const [certCredibility, setCertCredibility] = useState<
+  // Add Certification form state
+  const [addCertTitle, setAddCertTitle] = useState("");
+  const [addCertProvider, setAddCertProvider] = useState("");
+  const [addCertDomain, setAddCertDomain] = useState("General");
+  const [addCertCost, setAddCertCost] = useState<number>(0);
+  const [addCertDescription, setAddCertDescription] = useState("");
+  const [addCertDeadline, setAddCertDeadline] = useState("");
+  const [addCertCredibility, setAddCertCredibility] = useState<
     "verified" | "trusted" | "new"
   >("new");
-  const [certFacultyVerified, setCertFacultyVerified] = useState(false);
+  const [addCertFacultyVerified, setAddCertFacultyVerified] = useState(false);
+  const [addCertLink, setAddCertLink] = useState("");
+
+  // Edit Certification form state
+  const [editingCertId, setEditingCertId] = useState<string | null>(null);
+  const [editCertTitle, setEditCertTitle] = useState("");
+  const [editCertProvider, setEditCertProvider] = useState("");
+  const [editCertDomain, setEditCertDomain] = useState("General");
+  const [editCertCost, setEditCertCost] = useState<number>(0);
+  const [editCertDescription, setEditCertDescription] = useState("");
+  const [editCertDeadline, setEditCertDeadline] = useState("");
+  const [editCertCredibility, setEditCertCredibility] = useState<
+    "verified" | "trusted" | "new"
+  >("new");
+  const [editCertFacultyVerified, setEditCertFacultyVerified] = useState(false);
+  const [editCertLink, setEditCertLink] = useState("");
 
   // Users
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [userSearch, setUserSearch] = useState("");
-  useEffect(() => setUsers(loadUsers()), []);
+
+  // If backend for users implemented, replace with API call
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchUsers();
+      setUsers(data.users || data);
+    };
+    loadData();
+  }, []);
+
   const usersFiltered = users.filter(
     (u) =>
       !userSearch ||
@@ -78,63 +96,113 @@ export default function AdminDashboard() {
 
   // Certifications
   const [certs, setCerts] = useState<Certification[]>([]);
-  useEffect(() => setCerts(loadCerts()), []);
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchCertifications();
+      setCerts(data.certifications || data);
+    };
+    loadData();
+  }, []);
 
-  // Add/Edit Certification
-  const handleAddCertSubmit = () => {
+  // Add Certification
+  const handleAddCertSubmit = async () => {
     const certData: Certification = {
-      id: editingCertId || "c_" + Date.now(),
-      title: certTitle,
-      provider: certProvider,
-      domain: certDomain || "General",
-      cost: certCost,
-      description: certDescription,
+      id: "c_" + Date.now(),
+      title: addCertTitle,
+      provider: addCertProvider,
+      domain: addCertDomain || "General",
+      cost: addCertCost,
+      description: addCertDescription,
       deadline:
-        certDeadline ||
+        addCertDeadline ||
         new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
-      credibility: certCredibility,
-      facultyVerified: certFacultyVerified,
+      credibility: addCertCredibility,
+      facultyVerified: addCertFacultyVerified,
+      link: addCertLink,
     };
 
-    if (editingCertId) {
-      // Remove old and add updated
-      removeCert(editingCertId);
-      addCert(certData);
-      toast.success("Certification updated");
-    } else {
-      addCert(certData);
+    try {
+      await addCertification(certData);
       toast.success("Certification added");
+      // Refresh certifications from backend
+      const data = await fetchCertifications();
+      setCerts(data.certifications || data);
+    } catch (err) {
+      toast.error("Failed to add certification");
+    }
+
+    setAddCertTitle("");
+    setAddCertProvider("");
+    setAddCertDomain("General");
+    setAddCertCost(0);
+    setAddCertDescription("");
+    setAddCertDeadline("");
+    setAddCertCredibility("new");
+    setAddCertFacultyVerified(false);
+    setAddCertLink("");
+    setOpenAddCert(false);
+  };
+
+  // Open Edit Certification dialog and populate state
+  const handleEditCert = (cert: Certification) => {
+    setEditingCertId(cert.id);
+    setEditCertTitle(cert.title);
+    setEditCertProvider(cert.provider);
+    setEditCertDomain(cert.domain);
+    setEditCertCost(cert.cost);
+    setEditCertDescription(cert.description);
+    setEditCertDeadline(cert.deadline);
+    setEditCertCredibility(cert.credibility as "verified" | "trusted" | "new");
+    setEditCertFacultyVerified(cert.facultyVerified);
+    setEditCertLink(cert.link || "");
+    setOpenEditCert(true);
+  };
+
+  // Edit Certification
+  const handleEditCertSubmit = async () => {
+    if (!editingCertId) return;
+    const certData: Certification = {
+      id: editingCertId,
+      title: editCertTitle,
+      provider: editCertProvider,
+      domain: editCertDomain || "General",
+      cost: editCertCost,
+      description: editCertDescription,
+      deadline:
+        editCertDeadline ||
+        new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+      credibility: editCertCredibility,
+      facultyVerified: editCertFacultyVerified,
+      link: editCertLink,
+    };
+    try {
+      await addCertification(certData);
+      toast.success("Certification updated");
+      // Refresh certifications from backend
+      const data = await fetchCertifications();
+      setCerts(data.certifications || data);
+    } catch (err) {
+      toast.error("Failed to update certification");
     }
 
     setEditingCertId(null);
-    setCertTitle("");
-    setCertProvider("");
-    setCertDomain("General");
-    setCertCost(0);
-    setCertDescription("");
-    setCertDeadline("");
-    setCertCredibility("new");
-    setCertFacultyVerified(false);
-    setOpenAddCert(false);
-    setCerts(loadCerts());
+    setEditCertTitle("");
+    setEditCertProvider("");
+    setEditCertDomain("General");
+    setEditCertCost(0);
+    setEditCertDescription("");
+    setEditCertDeadline("");
+    setEditCertCredibility("new");
+    setEditCertFacultyVerified(false);
+    setEditCertLink("");
+    setOpenEditCert(false);
   };
 
-  const handleEditCert = (cert: Certification) => {
-    setEditingCertId(cert.id);
-    setCertTitle(cert.title);
-    setCertProvider(cert.provider);
-    setCertDomain(cert.domain);
-    setCertCost(cert.cost);
-    setCertDescription(cert.description);
-    setCertDeadline(cert.deadline);
-    setCertCredibility(cert.credibility as "verified" | "trusted" | "new");
-    setCertFacultyVerified(cert.facultyVerified);
-    setOpenAddCert(true);
-  };
-
-  const handleDeleteCert = (id: string) => {
+  const handleDeleteCert = async (id: string) => {
     removeCert(id);
-    setCerts(loadCerts());
+    // Refresh certifications from backend
+    const data = await fetchCertifications();
+    setCerts(data.certifications || data);
     toast.success("Certification deleted");
   };
 
@@ -189,7 +257,9 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mb-1">
                   Total Users
                 </p>
-                <p className="text-3xl font-bold text-foreground">1,247</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {users.length}
+                </p>
               </div>
               <Users className="w-12 h-12 text-primary" />
             </div>
@@ -200,7 +270,9 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mb-1">
                   Certifications
                 </p>
-                <p className="text-3xl font-bold text-foreground">156</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {certs.length}
+                </p>
               </div>
               <Award className="w-12 h-12 text-secondary" />
             </div>
@@ -211,7 +283,21 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mb-1">
                   Active This Month
                 </p>
-                <p className="text-3xl font-bold text-foreground">892</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {
+                    certs.filter((cert) => {
+                      // Use createdAt or fallback to id timestamp if available
+                      // createdAt should be ISO string
+                      if (!cert.createdAt) return false;
+                      const createdDate = new Date(cert.createdAt);
+                      const now = new Date();
+                      return (
+                        createdDate.getMonth() === now.getMonth() &&
+                        createdDate.getFullYear() === now.getFullYear()
+                      );
+                    }).length
+                  }
+                </p>
               </div>
               <TrendingUp className="w-12 h-12 text-verified" />
             </div>
@@ -222,7 +308,12 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground mb-1">
                   Pending Reviews
                 </p>
-                <p className="text-3xl font-bold text-foreground">23</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {
+                    certs.filter((cert) => cert.facultyVerified === false)
+                      .length
+                  }
+                </p>
               </div>
               <AlertCircle className="w-12 h-12 text-accent" />
             </div>
@@ -258,6 +349,17 @@ export default function AdminDashboard() {
                     <p className="text-sm text-muted-foreground">
                       {cert.provider} • {cert.domain} • ₹{cert.cost}
                     </p>
+                    {cert.link && (
+                      <p className="text-xs text-blue-600 mt-1 break-all">
+                        <a
+                          href={cert.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {cert.link}
+                        </a>
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -282,72 +384,135 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Add/Edit Certification Dialog */}
+      {/* Add Certification Dialog */}
       <Dialog open={openAddCert} onOpenChange={setOpenAddCert}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingCertId ? "Edit Certification" : "Add Certification"}
-            </DialogTitle>
+            <DialogTitle>Add Certification</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Input
-              placeholder="Title"
-              value={certTitle}
-              onChange={(e) => setCertTitle(e.target.value)}
-            />
-            <Input
-              placeholder="Provider"
-              value={certProvider}
-              onChange={(e) => setCertProvider(e.target.value)}
-            />
-            <select
-              className="w-full rounded-md border px-2 py-2"
-              value={certDomain}
-              onChange={(e) => setCertDomain(e.target.value)}
-            >
-              {DOMAINS.map((domain) => (
-                <option key={domain} value={domain}>
-                  {domain}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder="Cost"
-              type="number"
-              value={certCost}
-              onChange={(e) => setCertCost(Number(e.target.value))}
-            />
-            <Input
-              placeholder="Deadline"
-              type="date"
-              value={certDeadline}
-              onChange={(e) => setCertDeadline(e.target.value)}
-            />
-            <Textarea
-              placeholder="Description"
-              value={certDescription}
-              onChange={(e) => setCertDescription(e.target.value)}
-            />
-            <select
-              className="w-full rounded-md border px-2 py-2"
-              value={certCredibility}
-              onChange={(e) =>
-                setCertCredibility(e.target.value as "verified" | "trusted" | "new")
-              }
-            >
-              <option value="verified">verified</option>
-              <option value="trusted">trusted</option>
-              <option value="new">new</option>
-            </select>
-            <label className="inline-flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={certFacultyVerified}
-                onChange={(e) => setCertFacultyVerified(e.target.checked)}
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_title_input"
+                className="mb-1 font-medium"
+              >
+                Title
+              </label>
+              <Input
+                id="add_cert_title_input"
+                placeholder="Title"
+                value={addCertTitle}
+                onChange={(e) => setAddCertTitle(e.target.value)}
               />
-              <span>Faculty Verified</span>
-            </label>
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_provider_input"
+                className="mb-1 font-medium"
+              >
+                Provider
+              </label>
+              <Input
+                id="add_cert_provider_input"
+                placeholder="Provider"
+                value={addCertProvider}
+                onChange={(e) => setAddCertProvider(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="add_cert_link_input" className="mb-1 font-medium">
+                Link
+              </label>
+              <Input
+                id="add_cert_link_input"
+                placeholder="Certification Link"
+                value={addCertLink}
+                onChange={(e) => setAddCertLink(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_domain_select"
+                className="mb-1 font-medium"
+              >
+                Domain
+              </label>
+              <select
+                id="add_cert_domain_select"
+                className="w-full rounded-md border px-2 py-2"
+                value={addCertDomain}
+                onChange={(e) => setAddCertDomain(e.target.value)}
+              >
+                {DOMAINS.map((domain) => (
+                  <option key={domain} value={domain}>
+                    {domain}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="add_cert_cost_input" className="mb-1 font-medium">
+                Cost
+              </label>
+              <Input
+                id="add_cert_cost_input"
+                placeholder="Cost"
+                type="number"
+                value={addCertCost}
+                onChange={(e) => setAddCertCost(Number(e.target.value))}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_deadline_input"
+                className="mb-1 font-medium"
+              >
+                Deadline
+              </label>
+              <Input
+                id="add_cert_deadline_input"
+                placeholder="Deadline"
+                type="date"
+                value={addCertDeadline}
+                onChange={(e) => setAddCertDeadline(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_description_textarea"
+                className="mb-1 font-medium"
+              >
+                Description
+              </label>
+              <Textarea
+                id="add_cert_description_textarea"
+                placeholder="Description"
+                value={addCertDescription}
+                onChange={(e) => setAddCertDescription(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="add_cert_credibility_select"
+                className="mb-1 font-medium"
+              >
+                Credibility
+              </label>
+              <select
+                id="add_cert_credibility_select"
+                className="w-full rounded-md border px-2 py-2"
+                value={addCertCredibility}
+                onChange={(e) =>
+                  setAddCertCredibility(
+                    e.target.value as "verified" | "trusted" | "new"
+                  )
+                }
+              >
+                <option value="verified">verified</option>
+                <option value="trusted">trusted</option>
+                <option value="new">new</option>
+              </select>
+            </div>
           </div>
           <DialogFooter className="flex gap-2">
             <Button variant="ghost" onClick={() => setOpenAddCert(false)}>
@@ -356,9 +521,172 @@ export default function AdminDashboard() {
             <Button
               variant="hero"
               onClick={handleAddCertSubmit}
-              disabled={!certTitle || !certProvider}
+              disabled={!addCertTitle || !addCertProvider}
             >
-              {editingCertId ? "Update" : "Add"}
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Certification Dialog */}
+      <Dialog
+        open={openEditCert}
+        onOpenChange={(open) => {
+          setOpenEditCert(open);
+          if (!open) setEditingCertId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Certification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_title_input"
+                className="mb-1 font-medium"
+              >
+                Title
+              </label>
+              <Input
+                id="edit_cert_title_input"
+                placeholder="Title"
+                value={editCertTitle}
+                onChange={(e) => setEditCertTitle(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_provider_input"
+                className="mb-1 font-medium"
+              >
+                Provider
+              </label>
+              <Input
+                id="edit_cert_provider_input"
+                placeholder="Provider"
+                value={editCertProvider}
+                onChange={(e) => setEditCertProvider(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_link_input"
+                className="mb-1 font-medium"
+              >
+                Link
+              </label>
+              <Input
+                id="edit_cert_link_input"
+                placeholder="Certification Link"
+                value={editCertLink}
+                onChange={(e) => setEditCertLink(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_domain_select"
+                className="mb-1 font-medium"
+              >
+                Domain
+              </label>
+              <select
+                id="edit_cert_domain_select"
+                className="w-full rounded-md border px-2 py-2"
+                value={editCertDomain}
+                onChange={(e) => setEditCertDomain(e.target.value)}
+              >
+                {DOMAINS.map((domain) => (
+                  <option key={domain} value={domain}>
+                    {domain}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_cost_input"
+                className="mb-1 font-medium"
+              >
+                Cost
+              </label>
+              <Input
+                id="edit_cert_cost_input"
+                placeholder="Cost"
+                type="number"
+                value={editCertCost}
+                onChange={(e) => setEditCertCost(Number(e.target.value))}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_deadline_input"
+                className="mb-1 font-medium"
+              >
+                Deadline
+              </label>
+              <Input
+                id="edit_cert_deadline_input"
+                placeholder="Deadline"
+                type="date"
+                value={editCertDeadline}
+                onChange={(e) => setEditCertDeadline(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_description_textarea"
+                className="mb-1 font-medium"
+              >
+                Description
+              </label>
+              <Textarea
+                id="edit_cert_description_textarea"
+                placeholder="Description"
+                value={editCertDescription}
+                onChange={(e) => setEditCertDescription(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label
+                htmlFor="edit_cert_credibility_select"
+                className="mb-1 font-medium"
+              >
+                Credibility
+              </label>
+              <select
+                id="edit_cert_credibility_select"
+                className="w-full rounded-md border px-2 py-2"
+                value={editCertCredibility}
+                onChange={(e) =>
+                  setEditCertCredibility(
+                    e.target.value as "verified" | "trusted" | "new"
+                  )
+                }
+              >
+                <option value="verified">verified</option>
+                <option value="trusted">trusted</option>
+                <option value="new">new</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setOpenEditCert(false);
+                setEditingCertId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              onClick={handleEditCertSubmit}
+              disabled={!editCertTitle || !editCertProvider}
+            >
+              Update
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -396,56 +724,6 @@ export default function AdminDashboard() {
                 </Button>
               </div>
             ))}
-
-            <div className="pt-4">
-              <h4 className="font-semibold">Add user</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-                <Input placeholder="Full name" id="admin_new_user_name" />
-                <Input placeholder="Email" id="admin_new_user_email" />
-                <select
-                  id="admin_new_user_role"
-                  className="rounded-md border px-2 py-2"
-                >
-                  <option value="student">student</option>
-                  <option value="faculty">faculty</option>
-                  <option value="admin">admin</option>
-                </select>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button
-                  onClick={() => {
-                    const nameEl = document.getElementById(
-                      "admin_new_user_name"
-                    ) as HTMLInputElement;
-                    const emailEl = document.getElementById(
-                      "admin_new_user_email"
-                    ) as HTMLInputElement;
-                    const roleEl = document.getElementById(
-                      "admin_new_user_role"
-                    ) as HTMLSelectElement;
-                    if (!nameEl?.value || !emailEl?.value)
-                      return toast.error("Name and email required");
-                    handleAddUser({
-                      id: "u_" + Date.now(),
-                      fullName: nameEl.value,
-                      email: emailEl.value,
-                      role: roleEl.value as UserProfile["role"],
-                    });
-                    nameEl.value = "";
-                    emailEl.value = "";
-                    roleEl.value = "student";
-                  }}
-                >
-                  Add User
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setOpenManageUsers(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
