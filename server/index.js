@@ -12,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 const User = require("./models/User");
+const Certification = require("./models/Certification");
 
 app.get("/", (req, res) => {
   res.send("CertiQuest API is running");
@@ -85,8 +86,151 @@ app.post("/api/users/login", async (req, res) => {
   }
 });
 
-app.post("/api/certifications/add", (req, res) => {
+app.post("/api/certifications/add", async (req, res) => {
+  try {
+    const {
+      title,
+      provider,
+      domain,
+      cost,
+      deadline,
+      description,
+      credibility,
+      facultyVerified,
+      rating,
+      reviews,
+      reviewList,
+    } = req.body;
 
+    // Validate required fields
+    if (!title || !provider || !domain || !cost || !deadline || !description) {
+      console.error("Missing required fields for certification add:", {
+        title,
+        provider,
+        domain,
+        cost,
+        deadline,
+        description,
+      });
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Check if certification already exists
+    const existingCertification = await Certification.findOne({
+      title,
+      provider,
+    });
+    if (existingCertification) {
+      console.warn(
+        `Certification already exists: title="${title}", provider="${provider}"`
+      );
+      return res.status(400).json({ message: "Certification already exists" });
+    }
+
+    // Create new certification
+    const certification = await Certification.create({
+      title,
+      provider,
+      domain,
+      cost,
+      deadline,
+      description,
+      credibility,
+      facultyVerified,
+      rating,
+      reviews,
+      reviewList,
+    });
+
+    console.log(
+      `Certification added successfully: id=${certification._id}, title="${title}", provider="${provider}"`
+    );
+    res.status(201).json({
+      message: "Certification added successfully",
+      certification,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error adding certification:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.get("/api/certifications", async (req, res) => {
+  try {
+    const certifications = await Certification.find();
+    res.json({ certifications });
+  } catch (error) {
+    console.error("Error fetching certifications:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.post("/api/certifications/review", async (req, res) => {
+  try {
+    const { certificationId, user, rating, text } = req.body;
+
+    if (!certificationId || !user || !rating) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const certification = await Certification.findById(certificationId);
+    if (!certification) {
+      return res.status(404).json({ message: "Certification not found" });
+    }
+
+    certification.reviewList.push({
+      user,
+      rating,
+      text,
+      createdAt: new Date(),
+    });
+    certification.reviews = certification.reviewList.length;
+    certification.rating =
+      certification.reviewList.reduce((acc, review) => acc + review.rating, 0) /
+      certification.reviews;
+
+    await certification.save();
+
+    res.json({
+      message: "Review added successfully",
+      certification,
+    });
+  } catch (error) {
+    console.error("Error adding review:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.post("/api/certifications/verify", async (req, res) => {
+  try {
+    const { certificationId, facultyId } = req.body;
+
+    if (!certificationId || !facultyId) {
+      return res
+        .status(400)
+        .json({ message: "Missing certificationId or facultyId" });
+    }
+    const faculty = await User.findById(facultyId);
+    if (!faculty || faculty.role !== "Faculty") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Not a faculty member" });
+    }
+    const certification = await Certification.findById(certificationId);
+    if (!certification) {
+      return res.status(404).json({ message: "Certification not found" });
+    }
+    certification.facultyVerified = true;
+    await certification.save();
+    res.json({
+      message: "Certification verified successfully",
+      certification,
+    });
+  } catch (error) {
+    console.error("Error verifying certification:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
 });
 
 mongoose

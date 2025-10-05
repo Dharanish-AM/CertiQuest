@@ -11,12 +11,21 @@ import {
 } from "@/components/ui/select";
 import { CertificationCard } from "@/components/CertificationCard";
 import { CertificationDetail } from "@/components/CertificationDetail";
-import { mockCertifications } from "@/data/mockCertifications";
 import { Certification } from "@/types/certification";
-import { Search, Filter, LogOut, Bookmark, Bell, User, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Filter,
+  LogOut,
+  Bookmark,
+  Bell,
+  User,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { getDefaultProfile, loadProfile } from "@/lib/profile";
 import { UserProfile } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
+import { fetchCertifications } from "@/service/certificationService";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -27,12 +36,17 @@ export default function StudentDashboard() {
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const [recommendedCerts, setRecommendedCerts] = useState<Certification[]>([]);
+  const [certifications, setCertifications] = useState<Certification[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarks");
     if (saved) {
       setBookmarkedIds(JSON.parse(saved));
     }
+  }, []);
+
+  useEffect(() => {
+    fetchCertifications();
   }, []);
 
   const handleLogout = () => {
@@ -58,7 +72,7 @@ export default function StudentDashboard() {
     "Networking",
   ];
 
-  const filteredCerts = mockCertifications
+  const filteredCerts = certifications
     .filter((cert) => {
       const matchesSearch =
         cert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,17 +95,23 @@ export default function StudentDashboard() {
 
   // Compute simple recommendations based on profile degree + interests
   useEffect(() => {
-  const profile: UserProfile = (loadProfile() ?? getDefaultProfile("student")) as UserProfile;
-  const interests: string[] = profile.interests || [];
-  const degree: string = (profile.degree || "").toLowerCase();
+    const profile: UserProfile = (loadProfile() ??
+      getDefaultProfile("student")) as UserProfile;
+    const interests: string[] = profile.interests || [];
+    const degree: string = (profile.degree || "").toLowerCase();
 
-    const scored = mockCertifications
+    const scored = certifications
       .map((cert) => {
         let score = 0;
         // boost if domain matches an interest
         if (interests.includes(cert.domain)) score += 2;
         // boost if title or provider mentions degree or degree tokens
-        if (degree && (cert.title.toLowerCase().includes(degree) || cert.provider.toLowerCase().includes(degree))) score += 2;
+        if (
+          degree &&
+          (cert.title.toLowerCase().includes(degree) ||
+            cert.provider.toLowerCase().includes(degree))
+        )
+          score += 2;
         // slight boost if domain contains degree token
         if (degree && cert.domain.toLowerCase().includes(degree)) score += 1;
         return { cert, score };
@@ -103,16 +123,22 @@ export default function StudentDashboard() {
         const rb = b.cert.rating || 0;
         return rb - ra;
       })
-      .map(({ cert }) => ({ ...cert, bookmarked: bookmarkedIds.includes(cert.id) }));
+      .map(({ cert }) => ({
+        ...cert,
+        bookmarked: bookmarkedIds.includes(cert.id),
+      }));
 
     setRecommendedCerts(scored.slice(0, 8));
-  }, [bookmarkedIds]);
+  }, [bookmarkedIds, certifications]);
 
   const scrollCarousel = (dir: "left" | "right") => {
     if (!carouselRef.current) return;
     const el = carouselRef.current;
     const amount = el.clientWidth * 0.8;
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    el.scrollBy({
+      left: dir === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -240,13 +266,23 @@ export default function StudentDashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-2xl font-semibold">Recommended for You</h3>
-            <p className="text-sm text-muted-foreground">Based on your degree + interests</p>
+            <p className="text-sm text-muted-foreground">
+              Based on your degree + interests
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => scrollCarousel("left")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => scrollCarousel("left")}
+            >
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => scrollCarousel("right")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => scrollCarousel("right")}
+            >
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
@@ -258,15 +294,22 @@ export default function StudentDashboard() {
           style={{ scrollSnapType: "x mandatory" }}
         >
           {recommendedCerts.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No recommendations yet. Update your profile to get personalized suggestions.</div>
+            <div className="text-sm text-muted-foreground">
+              No recommendations yet. Update your profile to get personalized
+              suggestions.
+            </div>
           ) : (
             recommendedCerts.map((cert) => (
-              <div key={cert.id} className="min-w-[300px] h-full max-w-[450px] flex-shrink-0" style={{ scrollSnapAlign: "start" }}>
+              <div
+                key={cert.id}
+                className="min-w-[300px] h-full max-w-[450px] flex-shrink-0"
+                style={{ scrollSnapAlign: "start" }}
+              >
                 <CertificationCard
                   certification={cert}
                   onBookmark={handleBookmark}
                   onClick={(id) => {
-                    const found = mockCertifications.find((c) => c.id === id);
+                    const found = certifications.find((c) => c.id === id);
                     if (found) setSelectedCert(found);
                   }}
                   aiSuggested={true}
@@ -296,7 +339,7 @@ export default function StudentDashboard() {
               certification={cert}
               onBookmark={handleBookmark}
               onClick={(id) => {
-                const cert = mockCertifications.find((c) => c.id === id);
+                const cert = certifications.find((c) => c.id === id);
                 if (cert) setSelectedCert(cert);
               }}
               aiSuggested={false}

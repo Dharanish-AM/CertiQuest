@@ -27,6 +27,18 @@ import { addCert, loadCerts, removeCert } from "@/lib/certs";
 import { UserProfile } from "@/types/user";
 import { Certification } from "@/types/certification";
 
+const DOMAINS = [
+  "General",
+  "Technology",
+  "Business",
+  "Health",
+  "Education",
+  "Finance",
+  "Art",
+  "Science",
+  "Engineering",
+];
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
@@ -44,7 +56,7 @@ export default function AdminDashboard() {
   const [editingCertId, setEditingCertId] = useState<string | null>(null);
   const [certTitle, setCertTitle] = useState("");
   const [certProvider, setCertProvider] = useState("");
-  const [certDomain, setCertDomain] = useState("");
+  const [certDomain, setCertDomain] = useState("General");
   const [certCost, setCertCost] = useState<number>(0);
   const [certDescription, setCertDescription] = useState("");
   const [certDeadline, setCertDeadline] = useState("");
@@ -52,7 +64,6 @@ export default function AdminDashboard() {
     "verified" | "trusted" | "new"
   >("new");
   const [certFacultyVerified, setCertFacultyVerified] = useState(false);
-  const [certImageUrl, setCertImageUrl] = useState("");
 
   // Users
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -83,7 +94,6 @@ export default function AdminDashboard() {
         new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       credibility: certCredibility,
       facultyVerified: certFacultyVerified,
-      imageUrl: certImageUrl,
     };
 
     if (editingCertId) {
@@ -99,13 +109,12 @@ export default function AdminDashboard() {
     setEditingCertId(null);
     setCertTitle("");
     setCertProvider("");
-    setCertDomain("");
+    setCertDomain("General");
     setCertCost(0);
     setCertDescription("");
     setCertDeadline("");
     setCertCredibility("new");
     setCertFacultyVerified(false);
-    setCertImageUrl("");
     setOpenAddCert(false);
     setCerts(loadCerts());
   };
@@ -120,7 +129,6 @@ export default function AdminDashboard() {
     setCertDeadline(cert.deadline);
     setCertCredibility(cert.credibility as "verified" | "trusted" | "new");
     setCertFacultyVerified(cert.facultyVerified);
-    setCertImageUrl(cert.imageUrl || "");
     setOpenAddCert(true);
   };
 
@@ -293,11 +301,17 @@ export default function AdminDashboard() {
               value={certProvider}
               onChange={(e) => setCertProvider(e.target.value)}
             />
-            <Input
-              placeholder="Domain"
+            <select
+              className="w-full rounded-md border px-2 py-2"
               value={certDomain}
               onChange={(e) => setCertDomain(e.target.value)}
-            />
+            >
+              {DOMAINS.map((domain) => (
+                <option key={domain} value={domain}>
+                  {domain}
+                </option>
+              ))}
+            </select>
             <Input
               placeholder="Cost"
               type="number"
@@ -315,6 +329,25 @@ export default function AdminDashboard() {
               value={certDescription}
               onChange={(e) => setCertDescription(e.target.value)}
             />
+            <select
+              className="w-full rounded-md border px-2 py-2"
+              value={certCredibility}
+              onChange={(e) =>
+                setCertCredibility(e.target.value as "verified" | "trusted" | "new")
+              }
+            >
+              <option value="verified">verified</option>
+              <option value="trusted">trusted</option>
+              <option value="new">new</option>
+            </select>
+            <label className="inline-flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={certFacultyVerified}
+                onChange={(e) => setCertFacultyVerified(e.target.checked)}
+              />
+              <span>Faculty Verified</span>
+            </label>
           </div>
           <DialogFooter className="flex gap-2">
             <Button variant="ghost" onClick={() => setOpenAddCert(false)}>

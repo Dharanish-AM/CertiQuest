@@ -1,24 +1,23 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
+const { DOMAINS } = require("../constant/constant");
 
 const reviewSchema = new mongoose.Schema(
   {
-    id: { type: String, required: true },
-    userName: { type: String, required: true },
+    user: { type: mongoose.Schema.ObjectId, ref: "User", required: true },
     rating: { type: Number, required: true, min: 0, max: 5 },
     text: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false } 
+  { _id: true }
 );
 
 const certificationSchema = new mongoose.Schema(
   {
-    id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     provider: { type: String, required: true },
-    domain: { type: String, required: true },
+    domain: { type: String, enum: DOMAINS, required: true },
     cost: { type: Number, required: true },
-    deadline: { type: String, required: true }, 
+    deadline: { type: String, required: true },
     description: { type: String, required: true },
     credibility: {
       type: String,
@@ -33,4 +32,4 @@ const certificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Certification", certificationSchema);
+module.exports = mongoose.model("Certification", certificationSchema);
