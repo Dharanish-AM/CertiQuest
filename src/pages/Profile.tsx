@@ -11,7 +11,6 @@ import { UserProfile } from "@/types/user";
 import { getDefaultProfile, saveProfile, loadProfile } from "@/lib/profile";
 import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { getUser } from "@/service/userService";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -19,12 +18,20 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      const response = await getUser(localStorage.getItem("token"));
-      console.log(response.user)
-      setProfile(response.user);
-    };
-    loadData();
+    const userRole = localStorage.getItem("userRole") as 'student' | 'faculty' | 'admin' | null;
+    if (!userRole) {
+      navigate("/auth");
+      return;
+    }
+
+    const savedProfile = loadProfile();
+    if (savedProfile && savedProfile.role === userRole) {
+      setProfile(savedProfile);
+    } else {
+      const defaultProfile = getDefaultProfile(userRole);
+      setProfile(defaultProfile);
+      saveProfile(defaultProfile);
+    }
   }, [navigate]);
 
   const handleSave = () => {
@@ -36,9 +43,9 @@ export default function Profile() {
   };
 
   const handleBack = () => {
-    if (profile?.role === "student") {
+    if (profile?.role === 'student') {
       navigate("/student");
-    } else if (profile?.role === "faculty") {
+    } else if (profile?.role === 'faculty') {
       navigate("/faculty");
     } else {
       navigate("/admin");
@@ -55,7 +62,7 @@ export default function Profile() {
     if (profile && profile.interests) {
       setProfile({
         ...profile,
-        interests: [...profile.interests, interest],
+        interests: [...profile.interests, interest]
       });
     }
   };
@@ -64,20 +71,15 @@ export default function Profile() {
     if (profile && profile.interests) {
       setProfile({
         ...profile,
-        interests: profile.interests.filter((i) => i !== interest),
+        interests: profile.interests.filter(i => i !== interest)
       });
     }
   };
 
   if (!profile) return null;
 
-  const getInitials = (name?: string) => {
-    if (!name) return "??";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
@@ -104,7 +106,9 @@ export default function Profile() {
                   </Button>
                 </>
               ) : (
-                <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                <Button onClick={() => setIsEditing(true)}>
+                  Edit Profile
+                </Button>
               )}
             </div>
           </div>
@@ -119,7 +123,7 @@ export default function Profile() {
             <div className="relative">
               <Avatar className="w-24 h-24">
                 <AvatarFallback className="text-2xl font-semibold bg-gradient-to-br from-primary to-secondary text-white">
-                  {getInitials(profile.name)}
+                  {getInitials(profile.fullName)}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
@@ -144,11 +148,7 @@ export default function Profile() {
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                Member since{" "}
-                {new Date(profile.createdAt || "").toLocaleDateString(
-                  "en-US",
-                  { month: "long", year: "numeric" }
-                )}
+                Member since {new Date(profile.joinedDate || '').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -163,8 +163,8 @@ export default function Profile() {
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
                   id="fullName"
-                  value={profile.name}
-                  onChange={(e) => updateField("fullName", e.target.value)}
+                  value={profile.fullName}
+                  onChange={(e) => updateField('fullName', e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
@@ -174,7 +174,7 @@ export default function Profile() {
                   id="email"
                   type="email"
                   value={profile.email}
-                  onChange={(e) => updateField("email", e.target.value)}
+                  onChange={(e) => updateField('email', e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
@@ -183,7 +183,7 @@ export default function Profile() {
         </Card>
 
         {/* Role-Specific Information */}
-        {profile.role === "student" && (
+        {profile.role === 'student' && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Student Information</h3>
             <div className="space-y-4">
@@ -192,8 +192,8 @@ export default function Profile() {
                   <Label htmlFor="university">University</Label>
                   <Input
                     id="university"
-                    value={profile.university || ""}
-                    onChange={(e) => updateField("university", e.target.value)}
+                    value={profile.university || ''}
+                    onChange={(e) => updateField('university', e.target.value)}
                     disabled={!isEditing}
                   />
                 </div>
@@ -201,8 +201,8 @@ export default function Profile() {
                   <Label htmlFor="degree">Degree Program</Label>
                   <Input
                     id="degree"
-                    value={profile.degree || ""}
-                    onChange={(e) => updateField("degree", e.target.value)}
+                    value={profile.degree || ''}
+                    onChange={(e) => updateField('degree', e.target.value)}
                     disabled={!isEditing}
                   />
                 </div>
@@ -212,10 +212,8 @@ export default function Profile() {
                 <Input
                   id="graduationYear"
                   type="number"
-                  value={profile.graduationYear || ""}
-                  onChange={(e) =>
-                    updateField("graduationYear", parseInt(e.target.value))
-                  }
+                  value={profile.graduationYear || ''}
+                  onChange={(e) => updateField('graduationYear', parseInt(e.target.value))}
                   disabled={!isEditing}
                   className="max-w-xs"
                 />
@@ -242,11 +240,11 @@ export default function Profile() {
                     <Input
                       placeholder="Add interest (e.g., Machine Learning)"
                       onKeyPress={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === 'Enter') {
                           const input = e.target as HTMLInputElement;
                           if (input.value.trim()) {
                             addInterest(input.value.trim());
-                            input.value = "";
+                            input.value = '';
                           }
                         }
                       }}
@@ -258,7 +256,7 @@ export default function Profile() {
           </Card>
         )}
 
-        {profile.role === "faculty" && (
+        {profile.role === 'faculty' && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Faculty Information</h3>
             <div className="space-y-4">
@@ -267,8 +265,8 @@ export default function Profile() {
                   <Label htmlFor="department">Department</Label>
                   <Input
                     id="department"
-                    value={profile.department || ""}
-                    onChange={(e) => updateField("department", e.target.value)}
+                    value={profile.department || ''}
+                    onChange={(e) => updateField('department', e.target.value)}
                     disabled={!isEditing}
                   />
                 </div>
@@ -276,10 +274,8 @@ export default function Profile() {
                   <Label htmlFor="specialization">Specialization</Label>
                   <Input
                     id="specialization"
-                    value={profile.specialization || ""}
-                    onChange={(e) =>
-                      updateField("specialization", e.target.value)
-                    }
+                    value={profile.specialization || ''}
+                    onChange={(e) => updateField('specialization', e.target.value)}
                     disabled={!isEditing}
                   />
                 </div>
@@ -289,10 +285,8 @@ export default function Profile() {
                 <Input
                   id="experience"
                   type="number"
-                  value={profile.yearsOfExperience || ""}
-                  onChange={(e) =>
-                    updateField("yearsOfExperience", parseInt(e.target.value))
-                  }
+                  value={profile.yearsOfExperience || ''}
+                  onChange={(e) => updateField('yearsOfExperience', parseInt(e.target.value))}
                   disabled={!isEditing}
                   className="max-w-xs"
                 />
@@ -301,21 +295,15 @@ export default function Profile() {
           </Card>
         )}
 
-        {profile.role === "admin" && (
+        {profile.role === 'admin' && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Admin Information</h3>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="adminLevel">Admin Level</Label>
                 <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      profile.adminLevel === "super" ? "default" : "secondary"
-                    }
-                  >
-                    {profile.adminLevel === "super"
-                      ? "Super Admin"
-                      : "Moderator"}
+                  <Badge variant={profile.adminLevel === 'super' ? 'default' : 'secondary'}>
+                    {profile.adminLevel === 'super' ? 'Super Admin' : 'Moderator'}
                   </Badge>
                 </div>
               </div>
@@ -328,23 +316,16 @@ export default function Profile() {
           <h3 className="text-xl font-semibold mb-4">Account Settings</h3>
           <div className="space-y-4">
             <div>
-              <Button
-                variant="outline"
-                onClick={() => toast.info("Password change coming soon")}
-              >
+              <Button variant="outline" onClick={() => toast.info("Password change coming soon")}>
                 Change Password
               </Button>
             </div>
             <Separator />
             <div>
-              <h4 className="text-sm font-medium mb-2 text-destructive">
-                Danger Zone
-              </h4>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  toast.error("Account deletion requires confirmation")
-                }
+              <h4 className="text-sm font-medium mb-2 text-destructive">Danger Zone</h4>
+              <Button 
+                variant="destructive" 
+                onClick={() => toast.error("Account deletion requires confirmation")}
               >
                 Delete Account
               </Button>

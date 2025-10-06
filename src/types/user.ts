@@ -1,19 +1,19 @@
 export interface UserProfile {
-  createdAt: string;
   id: string;
   email: string;
-  password: string;
-  role: 'Student' | 'Faculty' | 'Admin';
   fullName: string;
+  role: 'student' | 'faculty' | 'admin';
   avatar?: string;
-  bookmarks: string[];
-  // Student-specific fields
+  // Student specific
   university?: string;
   degree?: string;
   graduationYear?: number;
   interests?: string[];
-  // Faculty-specific fields
+  // Faculty specific
   department?: string;
   specialization?: string;
   yearsOfExperience?: number;
+  // Admin specific
+  adminLevel?: 'super' | 'moderator';
+  joinedDate?: string;
 }

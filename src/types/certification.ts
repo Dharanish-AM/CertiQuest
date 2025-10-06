@@ -2,7 +2,6 @@ export interface Certification {
   id: string;
   title: string;
   provider: string;
-  link: string;
   domain: string;
   cost: number;
   deadline: string;
@@ -14,8 +13,6 @@ export interface Certification {
   reviews?: number;
   reviewList?: Review[];
   imageUrl?: string;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
 }
 
 export type UserRole = 'student' | 'faculty' | 'admin';
