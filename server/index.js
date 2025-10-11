@@ -13,6 +13,7 @@ app.use(express.json());
 
 const User = require("./models/User");
 const Certification = require("./models/Certification");
+const Group = require("./models/Group");
 
 app.get("/", (req, res) => {
   res.send("CertiQuest API is running");
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 
 app.post("/api/users/signup", async (req, res) => {
   try {
+    console.log(req.body)
     const { name, email, password, role } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -103,7 +105,6 @@ app.post("/api/certifications/add", async (req, res) => {
       reviewList,
     } = req.body;
 
-    // Validate required fields
     if (
       !title ||
       !provider ||
@@ -124,7 +125,6 @@ app.post("/api/certifications/add", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Check if certification already exists
     const existingCertification = await Certification.findOne({
       title,
       provider,
@@ -136,7 +136,6 @@ app.post("/api/certifications/add", async (req, res) => {
       return res.status(400).json({ message: "Certification already exists" });
     }
 
-    // Create new certification
     const certification = await Certification.create({
       title,
       provider,
@@ -321,6 +320,127 @@ app.put("/api/users/:id/bookmark", async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating bookmark:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+exports.createGroup = async (req, res) => {
+  try {
+    const { name, description, createdBy } = req.body;
+
+    if (!name || !createdBy) {
+      return res.status(400).json({ message: "Name and creator are required" });
+    }
+
+    const group = await Group.create({
+      name,
+      description,
+      createdBy,
+      members: [createdBy],
+      resources: [],
+      collaborativeNotes: "",
+      chat: [],
+    });
+
+    res.status(201).json({ message: "Group created successfully", group });
+  } catch (error) {
+    console.error("Error creating group:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+app.post("/api/groups/add-user", async (req, res) => {
+  try {
+    const { groupId, userId } = req.body;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (!group.members.includes(userId)) group.members.push(userId);
+    await group.save();
+
+    res.json({ message: "User added to group", group });
+  } catch (error) {
+    console.error("Error adding user to group:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.post("/api/groups/add-resource", async (req, res) => {
+  try {
+    const { groupId, title, type, link, uploadedBy } = req.body;
+
+    if (!title || !type || !groupId || !uploadedBy) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    group.resources.push({ title, type, link, uploadedBy });
+    await group.save();
+
+    res.json({
+      message: "Resource added successfully",
+      resources: group.resources,
+    });
+  } catch (error) {
+    console.error("Error adding resource:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.put("/api/groups/update-notes", async (req, res) => {
+  try {
+    const { groupId, notes } = req.body;
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    group.collaborativeNotes = notes;
+    await group.save();
+
+    res.json({
+      message: "Notes updated successfully",
+      notes: group.collaborativeNotes,
+    });
+  } catch (error) {
+    console.error("Error updating notes:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.post("/api/groups/chat", async (req, res) => {
+  try {
+    const { groupId, userId, text } = req.body;
+
+    if (!groupId || !userId || !text) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    group.chat.push({ user: userId, text, createdAt: new Date() });
+    await group.save();
+
+    res.json({ message: "Message added", chat: group.chat });
+  } catch (error) {
+    console.error("Error adding chat message:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+app.get("/api/groups/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const groups = await Group.find({ members: userId }).populate(
+      "members",
+      "fullName email"
+    );
+    res.json({ groups });
+  } catch (error) {
+    console.error("Error fetching groups:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });

@@ -38,7 +38,7 @@ export default function AdminDashboard() {
 
   // Logout
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
     navigate("/");
   };
 
@@ -113,13 +113,14 @@ export default function AdminDashboard() {
       domain: addCertDomain || "General",
       cost: addCertCost,
       description: addCertDescription,
-      deadline: addCertDeadline ||
+      deadline:
+        addCertDeadline ||
         new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       credibility: addCertCredibility,
       facultyVerified: addCertFacultyVerified,
       link: addCertLink,
       createdAt: "",
-      updatedAt: ""
+      updatedAt: "",
     };
 
     try {
@@ -169,13 +170,14 @@ export default function AdminDashboard() {
       domain: editCertDomain || "General",
       cost: editCertCost,
       description: editCertDescription,
-      deadline: editCertDeadline ||
+      deadline:
+        editCertDeadline ||
         new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       credibility: editCertCredibility,
       facultyVerified: editCertFacultyVerified,
       link: editCertLink,
       createdAt: "",
-      updatedAt: ""
+      updatedAt: "",
     };
     try {
       await addCertification(certData);

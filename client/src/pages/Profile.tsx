@@ -21,7 +21,7 @@ export default function Profile() {
   useEffect(() => {
     const loadData = async () => {
       const response = await getUser(localStorage.getItem("token"));
-      console.log(response.user)
+      console.log(response.user);
       setProfile(response.user);
     };
     loadData();
@@ -36,16 +36,16 @@ export default function Profile() {
   };
 
   const handleBack = () => {
-    if (profile?.role === "student") {
+    if (profile?.role === "Student") {
       navigate("/student");
-    } else if (profile?.role === "faculty") {
+    } else if (profile?.role === "Faculty") {
       navigate("/faculty");
     } else {
       navigate("/admin");
     }
   };
 
-  const updateField = (field: keyof UserProfile, value: any) => {
+  const updateField = (field: keyof UserProfile, value: unknown) => {
     if (profile) {
       setProfile({ ...profile, [field]: value });
     }
@@ -72,6 +72,7 @@ export default function Profile() {
   if (!profile) return null;
 
   const getInitials = (name?: string) => {
+    console.log(name)
     if (!name) return "??";
     return name
       .split(" ")
@@ -119,7 +120,7 @@ export default function Profile() {
             <div className="relative">
               <Avatar className="w-24 h-24">
                 <AvatarFallback className="text-2xl font-semibold bg-gradient-to-br from-primary to-secondary text-white">
-                  {getInitials(profile.name)}
+                  {getInitials(profile.name) as string}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
@@ -136,7 +137,7 @@ export default function Profile() {
             <div className="flex-1">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h2 className="text-3xl font-bold">{profile.fullName}</h2>
+                  <h2 className="text-3xl font-bold">{profile.name}</h2>
                   <p className="text-muted-foreground">{profile.email}</p>
                 </div>
                 <Badge variant="secondary" className="capitalize">
@@ -145,10 +146,10 @@ export default function Profile() {
               </div>
               <p className="text-sm text-muted-foreground mt-2">
                 Member since{" "}
-                {new Date(profile.createdAt || "").toLocaleDateString(
-                  "en-US",
-                  { month: "long", year: "numeric" }
-                )}
+                {new Date(profile.createdAt || "").toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
               </p>
             </div>
           </div>
@@ -183,7 +184,7 @@ export default function Profile() {
         </Card>
 
         {/* Role-Specific Information */}
-        {profile.role === "student" && (
+        {profile.role === "Student" && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Student Information</h3>
             <div className="space-y-4">
@@ -258,7 +259,7 @@ export default function Profile() {
           </Card>
         )}
 
-        {profile.role === "faculty" && (
+        {profile.role === "Faculty" && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Faculty Information</h3>
             <div className="space-y-4">
@@ -301,25 +302,10 @@ export default function Profile() {
           </Card>
         )}
 
-        {profile.role === "admin" && (
+        {profile.role === "Admin" && (
           <Card className="p-6 mb-6 shadow-card">
             <h3 className="text-xl font-semibold mb-4">Admin Information</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="adminLevel">Admin Level</Label>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      profile.adminLevel === "super" ? "default" : "secondary"
-                    }
-                  >
-                    {profile.adminLevel === "super"
-                      ? "Super Admin"
-                      : "Moderator"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+            <div className="space-y-4"></div>
           </Card>
         )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {DOMAINS} from "@/constants/constant"
+import { DOMAINS } from "@/constants/constant";
 import {
   Select,
   SelectContent,
@@ -55,11 +55,12 @@ export default function StudentDashboard() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
+    localStorage.removeItem("token");
     navigate("/");
   };
 
   const handleBookmark = (id: string) => {
+    console.log(id)
     const newBookmarks = bookmarkedIds.includes(id)
       ? bookmarkedIds.filter((bid) => bid !== id)
       : [...bookmarkedIds, id];
@@ -69,7 +70,7 @@ export default function StudentDashboard() {
   };
 
   const filteredCerts = certifications
-    .filter((cert) => {
+    ?.filter((cert) => {
       const matchesSearch =
         cert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         cert.provider.toLowerCase().includes(searchQuery.toLowerCase());
@@ -164,11 +165,14 @@ export default function StudentDashboard() {
                   My Bookmarks
                 </a>
                 <a
-                  href="#"
+                  href=""
                   className="text-sm font-medium text-muted-foreground hover:text-primary transition-base"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/groups");
+                  }}
                 >
-                  Deadlines
+                  Groups
                 </a>
               </nav>
             </div>
