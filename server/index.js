@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 
 app.post("/api/users/signup", async (req, res) => {
   try {
-    console.log(req.body)
+    console.log(req.body);
     const { name, email, password, role } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -441,6 +441,29 @@ app.get("/api/groups/user/:userId", async (req, res) => {
     res.json({ groups });
   } catch (error) {
     console.error("Error fetching groups:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+app.get("/api/faculty/pending-certs/:facultyId", async (req, res) => {
+  try {
+    const { facultyId } = req.params;
+    console.log(facultyId);
+
+    const faculty = await User.findById(facultyId);
+    if (!faculty || faculty.role !== "Faculty") {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Not a faculty member" });
+    }
+
+    const pendingCerts = await Certification.find({
+      facultyVerified: { $ne: true },
+      domain: { $in: faculty.specialization },
+    });
+
+    res.json({ pendingCertifications: pendingCerts });
+  } catch (error) {
+    console.error("Error fetching pending certifications:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });

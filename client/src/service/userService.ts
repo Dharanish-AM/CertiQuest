@@ -49,3 +49,15 @@ export const toggleBookmark = async (
     throw error;
   }
 };
+
+export const getPendingCerts = async (facultyId: string) => { 
+  try {
+    const response = await axios.get(
+      `${API_URL}/faculty/pending-certs/${facultyId}`
+    );
+    return response.data;
+  } catch (err) {
+    console.error(`Error`);
+    throw err;
+  }
+};

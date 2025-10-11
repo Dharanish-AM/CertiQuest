@@ -1,37 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, CheckCircle2, Clock, TrendingUp, X, User } from "lucide-react";
 import { toast } from "sonner";
+import { getPendingCerts } from "@/service/userService";
 
 export default function FacultyDashboard() {
   const navigate = useNavigate();
-  const [pendingVerifications, setPendingVerifications] = useState([
-    { id: "1", title: "AWS Certified Solutions Architect", provider: "Amazon Web Services", domain: "Cloud Computing" },
-    { id: "2", title: "Google Professional ML Engineer", provider: "Google Cloud", domain: "Machine Learning" },
-    { id: "3", title: "TensorFlow Developer Certificate", provider: "Google", domain: "Machine Learning" },
-  ]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPendingCerts = async () => {
+      try {
+        const userString = localStorage.getItem("user"); // use the exact key you stored
+        if (!userString) return;
+
+        const user = JSON.parse(userString); // convert string back to object
+        console.log(user);
+
+        const data = await getPendingCerts(user._id);
+        setPendingVerifications(data.pendingCertifications || []);
+      } catch (err) {
+        console.error("Failed to fetch pending certifications:", err);
+        toast.error("Failed to load pending certifications");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingCerts();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
+    localStorage.removeItem("userId");
     navigate("/");
   };
 
   const handleVerify = (id: string, title: string) => {
-    setPendingVerifications(prev => prev.filter(cert => cert.id !== id));
+    setPendingVerifications((prev) => prev.filter((cert) => cert.id !== id));
     toast.success(`Verified: ${title}`, {
-      description: "This certification is now marked as faculty verified"
+      description: "This certification is now marked as faculty verified",
     });
   };
 
   const handleReject = (id: string, title: string) => {
-    setPendingVerifications(prev => prev.filter(cert => cert.id !== id));
+    setPendingVerifications((prev) => prev.filter((cert) => cert.id !== id));
     toast.error(`Rejected: ${title}`, {
-      description: "This certification was not verified"
+      description: "This certification was not verified",
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading pending certifications...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,7 +70,11 @@ export default function FacultyDashboard() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">CertiQuest - Faculty</h1>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/profile")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/profile")}
+              >
                 <User className="w-5 h-5" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -57,7 +90,9 @@ export default function FacultyDashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Faculty Dashboard</h2>
-          <p className="text-muted-foreground">Review and verify certifications for students</p>
+          <p className="text-muted-foreground">
+            Review and verify certifications for students
+          </p>
         </div>
 
         {/* Stats */}
@@ -65,8 +100,12 @@ export default function FacultyDashboard() {
           <Card className="p-6 shadow-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Pending Reviews</p>
-                <p className="text-3xl font-bold text-foreground">{pendingVerifications.length}</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Pending Reviews
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {pendingVerifications.length}
+                </p>
               </div>
               <Clock className="w-12 h-12 text-accent" />
             </div>
@@ -74,7 +113,9 @@ export default function FacultyDashboard() {
           <Card className="p-6 shadow-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Verified This Month</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Verified This Month
+                </p>
                 <p className="text-3xl font-bold text-foreground">12</p>
               </div>
               <CheckCircle2 className="w-12 h-12 text-verified" />
@@ -83,7 +124,9 @@ export default function FacultyDashboard() {
           <Card className="p-6 shadow-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Student Impact</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Student Impact
+                </p>
                 <p className="text-3xl font-bold text-foreground">284</p>
               </div>
               <TrendingUp className="w-12 h-12 text-secondary" />
@@ -98,7 +141,9 @@ export default function FacultyDashboard() {
             <Card className="p-8 text-center">
               <CheckCircle2 className="w-12 h-12 text-verified mx-auto mb-3" />
               <p className="text-lg font-medium mb-1">All caught up!</p>
-              <p className="text-muted-foreground">No certifications pending verification</p>
+              <p className="text-muted-foreground">
+                No certifications pending verification
+              </p>
             </Card>
           ) : (
             <div className="space-y-4">
@@ -106,21 +151,25 @@ export default function FacultyDashboard() {
                 <Card key={cert.id} className="p-6 shadow-card">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-lg font-semibold mb-2">{cert.title}</h4>
-                      <p className="text-sm text-muted-foreground mb-3">{cert.provider}</p>
+                      <h4 className="text-lg font-semibold mb-2">
+                        {cert.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {cert.provider}
+                      </p>
                       <Badge variant="outline">{cert.domain}</Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="secondary" 
+                      <Button
+                        variant="secondary"
                         size="sm"
                         onClick={() => handleVerify(cert.id, cert.title)}
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         Verify
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => handleReject(cert.id, cert.title)}
                       >

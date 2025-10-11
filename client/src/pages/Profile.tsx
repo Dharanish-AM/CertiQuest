@@ -302,12 +302,7 @@ export default function Profile() {
           </Card>
         )}
 
-        {profile.role === "Admin" && (
-          <Card className="p-6 mb-6 shadow-card">
-            <h3 className="text-xl font-semibold mb-4">Admin Information</h3>
-            <div className="space-y-4"></div>
-          </Card>
-        )}
+
 
         {/* Account Settings */}
         <Card className="p-6 shadow-card">
@@ -323,9 +318,6 @@ export default function Profile() {
             </div>
             <Separator />
             <div>
-              <h4 className="text-sm font-medium mb-2 text-destructive">
-                Danger Zone
-              </h4>
               <Button
                 variant="destructive"
                 onClick={() =>
