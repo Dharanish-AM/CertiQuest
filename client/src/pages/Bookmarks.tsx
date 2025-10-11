@@ -6,11 +6,25 @@ import { CertificationDetail } from "@/components/CertificationDetail";
 import { mockCertifications } from "@/data/mockCertifications";
 import { Certification } from "@/types/certification";
 import { ArrowLeft, Bookmark as BookmarkIcon } from "lucide-react";
+import { fetchCertifications } from "@/service/certificationService";
 
 export default function Bookmarks() {
   const navigate = useNavigate();
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null);
+  const [certifications, setCertifications] = useState<Certification | null>(
+    null
+  );
+
+  console.log(bookmarkedIds);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchCertifications();
+      setCertifications(data.certifications || data);
+    };
+    loadData();
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("bookmarks");
@@ -20,18 +34,20 @@ export default function Bookmarks() {
   }, []);
 
   const handleBookmark = (id: string) => {
-    console.log(id)
+    console.log(id);
     const newBookmarks = bookmarkedIds.includes(id)
-      ? bookmarkedIds.filter(bid => bid !== id)
+      ? bookmarkedIds.filter((bid) => bid !== id)
       : [...bookmarkedIds, id];
-    
+
     setBookmarkedIds(newBookmarks);
     localStorage.setItem("bookmarks", JSON.stringify(newBookmarks));
   };
 
-  const bookmarkedCerts = mockCertifications
-    .filter(cert => bookmarkedIds.includes(cert.id))
-    .map(cert => ({ ...cert, bookmarked: true }));
+  const bookmarkedCerts = Array.isArray(certifications)
+    ? certifications
+        .filter((cert) => bookmarkedIds.includes(cert._id))
+        .map((cert) => ({ ...cert, bookmarked: true }))
+    : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,7 +55,11 @@ export default function Bookmarks() {
       <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/student")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/student")}
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1 className="text-2xl font-bold">My Bookmarks</h1>
@@ -63,16 +83,17 @@ export default function Bookmarks() {
         ) : (
           <div>
             <p className="text-muted-foreground mb-6">
-              You have {bookmarkedCerts.length} bookmarked certification{bookmarkedCerts.length !== 1 ? 's' : ''}
+              You have {bookmarkedCerts.length} bookmarked certification
+              {bookmarkedCerts.length !== 1 ? "s" : ""}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {bookmarkedCerts.map((cert) => (
                 <CertificationCard
-                  key={cert.id}
+                  key={cert._id}
                   certification={cert}
                   onBookmark={handleBookmark}
                   onClick={(id) => {
-                    const cert = mockCertifications.find(c => c.id === id);
+                    const cert = Array.isArray(certifications) ? certifications.find((c) => c._id === id) : null;
                     if (cert) setSelectedCert(cert);
                   }}
                 />
@@ -87,7 +108,9 @@ export default function Bookmarks() {
         isOpen={!!selectedCert}
         onClose={() => setSelectedCert(null)}
         onBookmark={handleBookmark}
-        isBookmarked={selectedCert ? bookmarkedIds.includes(selectedCert.id) : false}
+        isBookmarked={
+          selectedCert ? bookmarkedIds.includes(selectedCert._id) : false
+        }
       />
     </div>
   );

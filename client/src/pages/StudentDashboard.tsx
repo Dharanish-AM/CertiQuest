@@ -60,7 +60,6 @@ export default function StudentDashboard() {
   };
 
   const handleBookmark = (id: string) => {
-    console.log(id)
     const newBookmarks = bookmarkedIds.includes(id)
       ? bookmarkedIds.filter((bid) => bid !== id)
       : [...bookmarkedIds, id];

@@ -26,3 +26,15 @@ export const addCertification = async (certificationData: unknown) => {
   }
 };
 
+export const suggestedCertifications = async (studentId: string) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/student/suggestion/68e9f7d66a1322d3419bc0e3`
+    );
+    console.log("suggested certs:", response);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding certification:", error);
+    throw error;
+  }
+};

@@ -4,6 +4,7 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const { pipeline } = require("@xenova/transformers");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -467,6 +468,124 @@ app.get("/api/faculty/pending-certs/:facultyId", async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 });
+
+let embedder;
+let embedderReady = false;
+let embedderInitError = null;
+
+async function initEmbedder() {
+  try {
+    embedder = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    embedderReady = true;
+    console.log("Embedder initialized and ready.");
+  } catch (error) {
+    embedderInitError = error;
+    console.error("Failed to initialize embedder:", error);
+  }
+}
+
+initEmbedder();
+
+function waitForEmbedder(req, res, next) {
+  if (embedderReady) {
+    return next();
+  }
+  if (embedderInitError) {
+    return res.status(500).json({
+      message: "Embedder failed to initialize",
+      error: embedderInitError.toString(),
+    });
+  }
+  res
+    .status(503)
+    .json({ message: "Embedder is initializing, please try again soon." });
+}
+
+async function getEmbedding(
+  text,
+  logOnceObj = { warned: false, loggedEmptyOutput: false }
+) {
+  if (!text || !text.trim()) {
+    if (!logOnceObj.warned) {
+      console.warn("getEmbedding called with empty text, using zero vector.");
+      logOnceObj.warned = true;
+    }
+    return Array(384).fill(0);
+  }
+
+  const output = await embedder(text);
+  let embeddingVector = [];
+
+  if (output && typeof output === "object" && output.data && output.dims) {
+    const [batch, tokens, dims] = output.dims;
+    const tokenVectors = [];
+    for (let t = 0; t < tokens; t++) {
+      const start = t * dims;
+      const end = start + dims;
+      tokenVectors.push(output.data.slice(start, end));
+    }
+
+    embeddingVector = Array(dims).fill(0);
+    tokenVectors.forEach((tok) => {
+      tok.forEach((v, i) => (embeddingVector[i] += v));
+    });
+    embeddingVector = embeddingVector.map((v) => v / tokens);
+  } else if (output && Array.isArray(output.data)) {
+    embeddingVector = output.data.flat(Infinity);
+  }
+
+  if (!embeddingVector.length) {
+    if (!logOnceObj.loggedEmptyOutput) {
+      console.warn("Embedder output was empty. Raw output:", output);
+      logOnceObj.loggedEmptyOutput = true;
+    }
+    embeddingVector = Array(384).fill(0);
+  }
+
+  return embeddingVector;
+}
+
+function cosineSim(a, b) {
+  const dot = a.reduce((acc, v, i) => acc + v * b[i], 0);
+  const normA = Math.sqrt(a.reduce((acc, v) => acc + v * v, 0));
+  const normB = Math.sqrt(b.reduce((acc, v) => acc + v * v, 0));
+  return dot / (normA * normB);
+}
+
+app.get(
+  "/api/student/suggestion/:studentId",
+  waitForEmbedder,
+  async (req, res) => {
+    const { studentId } = req.params;
+    const student = await User.findById(studentId);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    const certifications = await Certification.find();
+
+    const logOnceObj = { warned: false, loggedEmptyOutput: false };
+
+    const interestsText = Array.isArray(student.interests)
+      ? student.interests.join(". ")
+      : "";
+    const studentEmbedding = await getEmbedding(interestsText, logOnceObj);
+
+    const scoredCerts = [];
+    for (const cert of certifications) {
+      const certText = [cert.title, cert.description, cert.domain]
+        .filter(Boolean)
+        .join(". ");
+      const certEmbedding = await getEmbedding(certText, logOnceObj);
+      const score = cosineSim(studentEmbedding, certEmbedding);
+      scoredCerts.push({ cert, score });
+    }
+
+    scoredCerts.sort((a, b) => b.score - a.score);
+
+    const suggestedCertifications = scoredCerts.slice(0, 10).map((s) => s.cert);
+
+    res.json({ suggestedCertifications });
+  }
+);
 
 mongoose
   .connect("mongodb://localhost:27017/certiquest")
