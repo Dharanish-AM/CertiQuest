@@ -36,13 +36,7 @@ export function CertificationCard({
   return (
     <Card
       className="overflow-hidden shadow-card hover:shadow-lg transition-smooth cursor-pointer group relative"
-      onClick={() => {
-        // ✅ Store the full certification object in localStorage
-        localStorage.setItem("selectedCert", JSON.stringify(certification));
-
-        // ✅ Use _id instead of id for navigation or actions
-        onClick?.(certification._id);
-      }}
+      onClick={() => onClick?.(certification.id)}
     >
       <div className="p-6">
         {aiSuggested && (
